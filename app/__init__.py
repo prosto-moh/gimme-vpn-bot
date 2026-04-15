@@ -1,0 +1,2 @@
+"""AmneziaWG bot package."""
+
