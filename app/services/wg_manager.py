@@ -17,7 +17,7 @@ from app.utils.files import (
     read_text_checked,
 )
 from app.utils.process import ProcessExecutionError, run_bash, run_command
-from app.utils.time import utc_now_iso
+from app.utils.time import awg_creation_date
 
 
 class WgConfigError(RuntimeError):
@@ -90,10 +90,12 @@ class WireGuardManager:
             client_name = f"{owner_name.strip()} - {device_name.strip()}"
             client_record = {
                 "clientId": client_public_key,
-                "clientName": client_name,
-                "creationDate": utc_now_iso(),
-                "ownerName": owner_name.strip(),
-                "deviceName": device_name.strip(),
+                "userData": {
+                    "clientName": client_name,
+                    "creationDate": awg_creation_date(),
+                    "ownerName": owner_name.strip(),
+                    "deviceName": device_name.strip(),
+                },
                 "clientIp": assigned_ip,
             }
             peer_block = self._build_peer_block(client_public_key, server_context.server_psk, assigned_ip)

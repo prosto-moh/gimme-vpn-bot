@@ -28,7 +28,11 @@ class ClientsTableService:
         updated: dict | None = None
         for client in clients:
             if str(client.get("clientId", "")) == client_id:
-                client["clientName"] = new_name
+                user_data = client.get("userData")
+                if not isinstance(user_data, dict):
+                    user_data = {}
+                    client["userData"] = user_data
+                user_data["clientName"] = new_name
                 updated = client
                 break
         if updated is None:
@@ -50,3 +54,26 @@ class ClientsTableService:
         atomic_write_json(self.path, remaining)
         return deleted
 
+    @staticmethod
+    def client_name(client: dict) -> str:
+        user_data = client.get("userData")
+        if isinstance(user_data, dict):
+            value = user_data.get("clientName")
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        value = client.get("clientName")
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        return str(client.get("clientId", "Без имени"))
+
+    @staticmethod
+    def creation_date(client: dict) -> str:
+        user_data = client.get("userData")
+        if isinstance(user_data, dict):
+            value = user_data.get("creationDate")
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        value = client.get("creationDate")
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        return "—"

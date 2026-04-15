@@ -51,8 +51,8 @@ def build_vpn_uri(config: AppConfig, artifacts: ClientArtifacts, native_conf: st
         "client_pub_key": artifacts.client_public_key,
         "config": native_conf,
         "hostName": config.server_host,
-        "mtu": config.default_mtu,
-        "persistent_keep_alive": 25,
+        "mtu": str(config.default_mtu),
+        "persistent_keep_alive": "25",
         "port": config.server_port,
         "psk_key": artifacts.server_psk,
         "server_pub_key": artifacts.server_public_key,
@@ -62,14 +62,15 @@ def build_vpn_uri(config: AppConfig, artifacts: ClientArtifacts, native_conf: st
             {
                 "awg": {
                     **artifacts.awg_params,
-                    "last_config": json.dumps(last_config_payload, ensure_ascii=False),
-                    "port": config.server_port,
+                    "last_config": json.dumps(last_config_payload, ensure_ascii=False, indent=4) + "\n",
+                    "port": str(config.server_port),
                     "subnet_address": artifacts.subnet_address,
                     "transport_proto": config.transport_proto,
-                }
+                },
+                "container": "amnezia-awg",
             }
         ],
-        "defaultContainer": "awg",
+        "defaultContainer": "amnezia-awg",
         "description": artifacts.client_name,
         "dns1": config.primary_dns,
         "dns2": config.secondary_dns,
@@ -78,4 +79,3 @@ def build_vpn_uri(config: AppConfig, artifacts: ClientArtifacts, native_conf: st
     payload_bytes = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     compressed = len(payload_bytes).to_bytes(4, byteorder="big") + zlib.compress(payload_bytes)
     return "vpn://" + base64.urlsafe_b64encode(compressed).decode("ascii")
-

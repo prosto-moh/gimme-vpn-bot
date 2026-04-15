@@ -7,6 +7,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import BufferedInputFile, CallbackQuery, KeyboardButton, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
+from app.services.clients_table import ClientsTableService
 from app.utils.files import FileStateError
 from app.services.wg_manager import GeneratedClient, WgConfigError, WireGuardManager
 
@@ -41,7 +42,7 @@ def format_keyboard():
 def clients_keyboard(clients: list[dict], action: str):
     builder = InlineKeyboardBuilder()
     for index, client in enumerate(clients):
-        label = client.get("clientName") or client.get("clientId") or f"Client {index + 1}"
+        label = ClientsTableService.client_name(client) or client.get("clientId") or f"Client {index + 1}"
         builder.button(text=label[:60], callback_data=f"{action}:{index}")
     builder.adjust(1)
     return builder.as_markup()
@@ -53,9 +54,9 @@ def _clients_list_text(clients: list[dict]) -> str:
     lines = ["Список клиентов:"]
     for index, client in enumerate(clients, start=1):
         lines.append(
-            f"{index}. {client.get('clientName', 'Без имени')} | "
+            f"{index}. {ClientsTableService.client_name(client)} | "
             f"{client.get('clientId', '—')} | "
-            f"{client.get('creationDate', '—')}"
+            f"{ClientsTableService.creation_date(client)}"
         )
     return "\n".join(lines)
 
@@ -133,7 +134,8 @@ async def new_conf_format(
 
 
 async def _send_generated_file(message: Message, result: GeneratedClient, file_format: str) -> None:
-    filename_base = _sanitize_filename(result.client_record["clientName"])
+    client_name = ClientsTableService.client_name(result.client_record)
+    filename_base = _sanitize_filename(client_name)
     if file_format == "vpn":
         payload = result.vpn_uri.encode("utf-8")
         filename = f"{filename_base}.vpn"
@@ -145,7 +147,7 @@ async def _send_generated_file(message: Message, result: GeneratedClient, file_f
     await message.answer_document(
         document=document,
         caption=(
-            f"clientName: {result.client_record['clientName']}\n"
+            f"clientName: {client_name}\n"
             f"clientId: {result.client_record['clientId']}\n"
             f"clientIp: {result.client_record['clientIp']}"
         ),
@@ -189,7 +191,7 @@ async def revoke_selected(callback: CallbackQuery, wg_manager: WireGuardManager)
 
     await callback.answer("Конфиг отозван.")
     await callback.message.answer(
-        f"Удален клиент: {deleted.get('clientName', deleted.get('clientId', 'unknown'))}",
+        f"Удален клиент: {ClientsTableService.client_name(deleted)}",
         reply_markup=main_menu_keyboard(),
     )
 
@@ -227,7 +229,7 @@ async def rename_selected(
     await state.update_data(client_id=str(client["clientId"]))
     await callback.answer()
     await callback.message.answer(
-        f"Введите новое имя для {client.get('clientName', client.get('clientId', 'клиента'))}:"
+        f"Введите новое имя для {ClientsTableService.client_name(client)}:"
     )
 
 
@@ -251,7 +253,7 @@ async def rename_apply(message: Message, state: FSMContext, wg_manager: WireGuar
         return
 
     await message.answer(
-        f"Новое имя сохранено: {updated.get('clientName', new_name)}",
+        f"Новое имя сохранено: {ClientsTableService.client_name(updated)}",
         reply_markup=main_menu_keyboard(),
     )
     await state.clear()
